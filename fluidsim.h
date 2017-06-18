@@ -44,6 +44,7 @@ public:
     Q_PROPERTY(qreal dt MEMBER m_dt WRITE setDt NOTIFY dtChanged)
     Q_PROPERTY(qreal v MEMBER m_v WRITE setV NOTIFY vChanged)
     Q_PROPERTY(unsigned factor MEMBER m_factor WRITE setFactor NOTIFY factorChanged)
+    Q_PROPERTY(unsigned display MEMBER m_display WRITE setDisplay NOTIFY displayChanged)
     virtual QQuickFramebufferObject::Renderer *createRenderer() const override;
 
 public slots:
@@ -82,12 +83,26 @@ public slots:
         update();
     }
 
+    inline void reset() {
+        m_reset = true;
+        update();
+    }
+
+    void setDisplay(unsigned display) {
+        if (m_display == display) return;
+        m_display = display;
+        emit displayChanged(display);
+        update();
+    }
+
 private:
-    qreal m_g;
-    qreal m_k;
-    qreal m_dt;
-    qreal m_v;
-    unsigned m_factor;
+    qreal m_g = 0.07;
+    qreal m_k = 4;
+    qreal m_dt = 0.05;
+    qreal m_v = 0.05;
+    unsigned m_factor = 1;
+    unsigned m_display = 0;
+    bool m_reset = false;
 
 signals:
     void gChanged(qreal);
@@ -95,6 +110,7 @@ signals:
     void kChanged(qreal);
     void vChanged(qreal);
     void factorChanged(unsigned);
+    void displayChanged(unsigned display);
 };
 
 #endif // FLUIDSIM_H

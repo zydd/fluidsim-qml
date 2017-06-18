@@ -19,6 +19,7 @@ void main() {
     } else {
         fragColor = vec4(1);
         if (uv.t > 0.5 && uv.t < 5./6) {
+//            if (dot(2*fract(6*uv)-1,2*fract(6*uv)-1) < 0.5)
             if (abs(fract(6*uv.t) - 0.5) < 0.3 && abs(fract(6*uv.s) - 0.5) < 0.3)
                 fragColor.x = 0;
         }

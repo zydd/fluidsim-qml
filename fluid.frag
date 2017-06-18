@@ -56,7 +56,7 @@ void main() {
         // dp = (-ú . grad p - p div ú) dt
         // p = p_ + (-ú . grad p - p div ú) dt  // dp = p - p_
         float p = fc.z + (-dot(fc.xy,grad_p) - fc.z * div_u) * dt;
-        fc.z = max(0.2,p);
+        fc.z = clamp(p,0.2,50);
 
         fc.xy = texture(dom,uv - dt*fc.xy*inv_size).xy;
 
@@ -78,7 +78,8 @@ void main() {
             }
         }
 
-        fc.w = texture(dom,uv - dt*fc.xy*inv_size).w;
+        fc.w = texture(dom,uv - dt*fc.xy*inv_size).w * 0.99995;
+//        vec2 rnd = random2(uv+u); fc.w += rnd.x == 0 && rnd.y == 0 ? 0.1 : 0;
     }
 
     fragColor = fc;
