@@ -27,15 +27,6 @@ FluidRenderer::FluidRenderer(const FluidSim *parent)
     }
     m_progFluid->link();
 
-    m_progDensity = new QOpenGLShaderProgram;
-    m_progDensity->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-    {
-        QFile frag(":/density.frag");
-        frag.open(QFile::ReadOnly);
-        m_progDensity->addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(frag.readAll()));
-    }
-    m_progDensity->link();
-
     m_progDisp = new QOpenGLShaderProgram;
     m_progDisp->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
     {
@@ -71,23 +62,22 @@ FluidRenderer::FluidRenderer(const FluidSim *parent)
 
     m_progFluid->bind();
     m_progFluid->setUniformValue(1,1./simw,1./simh); // inv_size
-    m_progDensity->bind();
-    m_progDensity->setUniformValue(1,1./simw,1./simh); // inv_size
 }
 
 void FluidRenderer::initializeBuffer() {
     QOpenGLExtraFunctions *f = QOpenGLContext::currentContext()->extraFunctions();
 
     for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < 2; ++j) {
-            m_compFbo[i][j] = new QOpenGLFramebufferObject(simw,simh,
-                                      QOpenGLFramebufferObject::NoAttachment,
-                                      GL_TEXTURE_2D,GL_RGBA16F);
-            f->glBindTexture(GL_TEXTURE_2D,m_compFbo[i][j]->texture());
-            f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-            f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-        }
+        m_fieldFbo[i] = new QOpenGLFramebufferObject(simw,simh,
+                                  QOpenGLFramebufferObject::NoAttachment,
+                                  GL_TEXTURE_2D,GL_RGBA16F);
+        f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[i]->texture());
+        f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+        f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     }
+    m_domainFbo = new QOpenGLFramebufferObject(simw,simh,
+                              QOpenGLFramebufferObject::NoAttachment,
+                              GL_TEXTURE_2D,GL_LUMINANCE4);
 
     QOpenGLShaderProgram progInit;
     progInit.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
@@ -98,24 +88,21 @@ void FluidRenderer::initializeBuffer() {
     }
     progInit.link();
 
-    QOpenGLTexture den_tex(QImage(":/init.png"));
-    QOpenGLTexture dom_tex(QImage(":/init.png"));
-
     f->glViewport(0,0,simw,simh);
 
-    den_tex.bind(1);
-    dom_tex.bind(0);
+    QOpenGLTexture den_tex(QImage(":/init.png"));
+    den_tex.bind(0);
     progInit.bind();
 
-    m_compFbo[m_cfbo][0]->bind();
+    m_fieldFbo[m_cfbo]->bind();
     progInit.setUniformValue(0,GLint(0));
     f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    m_compFbo[m_cfbo][0]->release();
+    m_fieldFbo[m_cfbo]->release();
 
-    m_compFbo[m_cfbo][1]->bind();
+    m_domainFbo->bind();
     progInit.setUniformValue(0,GLint(1));
     f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    m_compFbo[m_cfbo][1]->release();
+    m_domainFbo->release();
 }
 
 void FluidRenderer::render() {
@@ -124,9 +111,9 @@ void FluidRenderer::render() {
     m_vao->bind();
 
     f->glActiveTexture(GL_TEXTURE0);
-    f->glBindTexture(GL_TEXTURE_2D,m_compFbo[m_cfbo][0]->texture());
+    f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[m_cfbo]->texture());
     f->glActiveTexture(GL_TEXTURE1);
-    f->glBindTexture(GL_TEXTURE_2D,m_compFbo[m_cfbo][1]->texture());
+    f->glBindTexture(GL_TEXTURE_2D,m_domainFbo->texture());
 
     m_progDisp->bind();
     f->glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -137,35 +124,25 @@ void FluidRenderer::render() {
     f->glViewport(0,0,simw,simh);
     m_vao->bind();
 
+    f->glActiveTexture(GL_TEXTURE1);
+    f->glBindTexture(GL_TEXTURE_2D,m_domainFbo->texture());
     for (int i = 0; i < m_iterations; ++i) {
         f->glActiveTexture(GL_TEXTURE0);
-        f->glBindTexture(GL_TEXTURE_2D,m_compFbo[m_cfbo][0]->texture());
-        f->glActiveTexture(GL_TEXTURE1);
-        f->glBindTexture(GL_TEXTURE_2D,m_compFbo[m_cfbo][1]->texture());
+        f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[m_cfbo]->texture());
 
-        m_compFbo[!m_cfbo][0]->bind();
+        m_fieldFbo[!m_cfbo]->bind();
         m_progFluid->bind();
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
-        m_compFbo[!m_cfbo][0]->release();
+        m_fieldFbo[!m_cfbo]->release();
 
-        m_compFbo[!m_cfbo][1]->bind();
-        m_progDensity->bind();
-        f->glDrawArrays(GL_TRIANGLES, 0, 6);
-        m_compFbo[!m_cfbo][1]->release();
         m_cfbo = !m_cfbo;
     }
 
     m_vao->release();
-
-    f->glActiveTexture(GL_TEXTURE0);
-
     update();
 }
 
 void FluidRenderer::synchronize(QQuickFramebufferObject */*item*/) {
-    m_progDensity->bind();
-    m_progDensity->setUniformValue(0,GLfloat(m_item->m_dt));
-    m_progDensity->release();
     m_progFluid->bind();
     m_progFluid->setUniformValue(0,GLfloat(m_item->m_dt));
     m_progFluid->setUniformValue(2,GLfloat(m_item->m_v));

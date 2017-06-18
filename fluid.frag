@@ -33,9 +33,9 @@ void main() {
     const ivec2 UV = ivec2(gl_FragCoord.xy);
     vec4 fc = texelFetch(dom,UV,0);
 
-    vec2 acc = texelFetch(den,UV,0).x * g;
+    vec2 acc = texelFetch(dom,UV,0).w * g;
 
-    if (texelFetch(den,UV,0).y > 0.1) {
+    if (texelFetch(den,UV,0).x > 0) {
         const vec3 fr = texelFetch(dom,UV+ivec2(1,0),0).xyz;
         const vec3 fl = texelFetch(dom,UV-ivec2(1,0),0).xyz;
         const vec3 ft = texelFetch(dom,UV+ivec2(0,1),0).xyz;
@@ -58,10 +58,9 @@ void main() {
         float p = fc.z + (-dot(fc.xy,grad_p) - fc.z * div_u) * dt;
         fc.z = max(0.2,p);
 
-        vec2 prev = uv - dt*fc.xy*inv_size;
-        fc.xy = texture(dom,prev).xy;
+        fc.xy = texture(dom,uv - dt*fc.xy*inv_size).xy;
 
-        // grad P = K grad p  -- incompressibility
+        // grad P ≃ K grad p
         // du/dt = - grad P / p + ǵ + mu/p lap u
         // ú = ú_ + ( - K/p grad p + g + mu/p lap ú) dt  // du = ú - ú_
         vec2 u = fc.xy + (-K/fc.z * grad_p + acc + v/fc.z * lap_u) * dt;
@@ -74,10 +73,12 @@ void main() {
             vec4( 0, 1,0,0)
         );
         for (int i=0; i<4; ++i) {
-            if (texelFetch(den,UV+ivec2(Directions[i].xy),0).y < 0.1f) {
+            if (texelFetch(den,UV+ivec2(Directions[i].xy),0).x < 0.1) {
                 fc.xy*=(1-abs(Directions[i].xy));
             }
         }
+
+        fc.w = texture(dom,uv - dt*fc.xy*inv_size).w;
     }
 
     fragColor = fc;

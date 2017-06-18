@@ -23,10 +23,10 @@ private:
 
     const FluidSim *m_item;
     QOpenGLShaderProgram *m_progFluid;
-    QOpenGLShaderProgram *m_progDensity;
     QOpenGLShaderProgram *m_progDisp;
     QOpenGLBuffer *m_vbo;
-    QOpenGLFramebufferObject *m_compFbo[2][2];
+    QOpenGLFramebufferObject *m_fieldFbo[2];
+    QOpenGLFramebufferObject *m_domainFbo;
     QOpenGLVertexArrayObject *m_vao;
     int m_cfbo = 0;
     int m_iterations = 1;

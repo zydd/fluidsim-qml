@@ -17,10 +17,10 @@ Window {
             width: Math.min(root.width,root.height)
             height: Math.min(root.width,root.height)
             g: 0.07
-            k: 5
+            k: 4
             v: 0.05
             dt: 0.05
-            factor: 5
+            factor: 10
         }
 
 //        Column {

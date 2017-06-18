@@ -2,7 +2,6 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>display.frag</file>
-        <file>density.frag</file>
         <file>fluid.frag</file>
         <file>init.frag</file>
         <file>init.png</file>
