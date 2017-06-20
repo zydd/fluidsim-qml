@@ -22,7 +22,7 @@ void main() {
     switch (idx) {
     case 0:
 //        fragColor = vec4(0,0,1,texture(den,uv).x*7);
-        fragColor = vec4(0,0,0,0);
+        fragColor = vec4(0,0,1,0);
         break;
     case 1:
         fragColor = vec4(1);
@@ -35,7 +35,9 @@ void main() {
         vec2 st = uv;
         st.x *= ratio;
         st -= point * vec2(ratio,1);
-        fragColor = texelFetch(den,UV,0) + 0.5*clamp(1-2/rad*sqrt(dot(st,st)),0,1);
+        fragColor = texelFetch(den,UV,0);
+        fragColor.w += clamp(1-2/rad*sqrt(dot(st,st)),0,1);
+        fragColor.z += 0.5*clamp(1-1/rad*sqrt(dot(st,st)),0,1);
         break;
     }
     }

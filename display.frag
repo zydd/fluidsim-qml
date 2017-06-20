@@ -23,11 +23,11 @@ void main() {
     vec4 fc = texture(dom,uv);
     float d = abs(fc.w);
     switch (display) {
-    //    case 0: fragColor = obs*vec4(d*0.4,d*1.3,d*2.5,1) + (1-obs)*vec4(0.3,0.2,1,1); break;
-    case 0: fragColor = vec4(hsv2rgb(vec3(clamp(-0.6+log(d)*0.6,0,1),1,d/2)),1); break;
+    case 0: fragColor = obs*vec4(d*0.4,d*1.3,d*2.5,1) + (1-obs)*vec4(0.3,0.2,1,1); break;
     case 1: fragColor = vec4(vec3(sqrt(dot(fc.xy,fc.xy))/3),1); break;
     case 2: fragColor = vec4(fc.xy+0.5,1,1); break;
-    case 3: fragColor = vec4(fc.zzz,1); break;
-    case 4: fragColor = vec4(log2(1+0.5*log2(1+fc.www)).rg,1,1); break;
+    case 3: fragColor = vec4(fc.zzz/2,1); break;
+    case 4: fragColor = vec4(log(1+0.5*log(1+fc.www)),1); break;
+    case 5: fragColor = vec4(hsv2rgb(vec3(clamp(-0.6+log(d)*0.4,0,1),1,d/2)),1); break;
     }
 }

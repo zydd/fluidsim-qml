@@ -33,7 +33,7 @@ void main() {
     const ivec2 UV = ivec2(gl_FragCoord.xy);
     vec4 fc = texelFetch(dom,UV,0);
 
-    vec2 acc = texelFetch(dom,UV,0).w * g;
+    vec2 acc = g.y > 0 ? fc.w*g : max(0,1-fc.w)*g;
 
     if (texelFetch(den,UV,0).x > 0) {
         const vec3 fr = texelFetch(dom,UV+ivec2(1,0),0).xyz;
@@ -42,7 +42,7 @@ void main() {
         const vec3 fb = texelFetch(dom,UV-ivec2(0,1),0).xyz;
 
         fc.xyw = texture(dom,uv - dt*fc.xy*inv_size).xyw;
-//        fc.w *= 0.99;
+        fc.w *= g.y < 0 ? 0.992 : 1;
 
         // grad p = (d/dx p, d/dy p)
         vec2 grad_p = vec2((fr.z-fl.z)/2, (ft.z-fb.z)/2);
@@ -58,8 +58,8 @@ void main() {
         // dp = (-ú . grad p - p div ú) dt
         // p = p_ + (-ú . grad p - p div ú) dt  // dp = p - p_
         float p = fc.z + (-dot(fc.xy,grad_p) - fc.z * div_u) * dt;
-        p = p + (1-p)*0.002;
-        fc.z = clamp(p,0.2,50);
+        p = p + (2-p)*0.001;
+        fc.z = clamp(p,0.2,100);
 
         // grad P ≃ K grad p
         // du/dt = - grad P / p + ǵ + mu/p lap u
