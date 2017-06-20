@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>main.qml</file>
         <file>display.frag</file>
         <file>fluid.frag</file>
         <file>init.frag</file>

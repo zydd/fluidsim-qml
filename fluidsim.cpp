@@ -18,23 +18,9 @@ FluidRenderer::FluidRenderer(const FluidSim *parent)
 {
     auto f = QOpenGLContext::currentContext()->functions();
 
-    m_progFluid = new QOpenGLShaderProgram;
-    m_progFluid->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-    {
-        QFile frag(":/fluid.frag");
-        frag.open(QFile::ReadOnly);
-        m_progFluid->addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(frag.readAll()));
-    }
-    m_progFluid->link();
-
-    m_progDisp = new QOpenGLShaderProgram;
-    m_progDisp->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-    {
-        QFile frag(":/display.frag");
-        frag.open(QFile::ReadOnly);
-        m_progDisp->addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(frag.readAll()));
-    }
-    m_progDisp->link();
+    m_progFluid = linkFragment(":/fluid.frag");
+    m_progDisp = linkFragment(":/display.frag");
+    m_progInit = linkFragment(":/init.frag");
 
     m_vao = new QOpenGLVertexArrayObject;
     if (m_vao->create())
@@ -57,58 +43,81 @@ FluidRenderer::FluidRenderer(const FluidSim *parent)
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     m_vbo->release();
+}
 
-    for (int i = 0; i < 2; ++i) {
-        m_fieldFbo[i] = new QOpenGLFramebufferObject(simw,simh,
-                                  QOpenGLFramebufferObject::NoAttachment,
-                                  GL_TEXTURE_2D,GL_RGBA16F);
-        f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[i]->texture());
-        f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-        f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    }
-    m_domainFbo = new QOpenGLFramebufferObject(simw,simh,
-                              QOpenGLFramebufferObject::NoAttachment,
-                              GL_TEXTURE_2D,GL_LUMINANCE4);
+QOpenGLShaderProgram *FluidRenderer::linkFragment(QString frag) {
+    QFile fragfile(frag);
+    fragfile.open(QFile::ReadOnly);
 
-    initializeBuffer();
-
-    m_progFluid->bind();
-    m_progFluid->setUniformValue(1,1./simw,1./simh); // inv_size
+    auto prog = new QOpenGLShaderProgram;
+    prog->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
+    prog->addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(fragfile.readAll()));
+    prog->link();
+    return prog;
 }
 
 void FluidRenderer::initializeBuffer() {
     QOpenGLExtraFunctions *f = QOpenGLContext::currentContext()->extraFunctions();
 
-    QOpenGLShaderProgram progInit;
-    progInit.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-    {
-        QFile frag(":/init.frag");
-        frag.open(QFile::ReadOnly);
-        progInit.addShaderFromSourceCode(QOpenGLShader::Fragment, QString::fromUtf8(frag.readAll()));
+    if (! m_domainFbo || m_domainFbo->size() != m_simSize) {
+        delete m_domainFbo;
+        delete m_fieldFbo[0];
+        delete m_fieldFbo[1];
+        for (int i = 0; i < 2; ++i) {
+            m_fieldFbo[i] = new QOpenGLFramebufferObject(m_simSize,
+                                      QOpenGLFramebufferObject::NoAttachment,
+                                      GL_TEXTURE_2D,GL_RGBA16F);
+            f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[i]->texture());
+            f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+            f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+        }
+        m_domainFbo = new QOpenGLFramebufferObject(m_simSize,
+                                  QOpenGLFramebufferObject::NoAttachment,
+                                  GL_TEXTURE_2D,GL_LUMINANCE4);
+        m_progInit->bind();
+        m_progInit->setUniformValue(1,m_simSize);
     }
-    progInit.link();
 
     m_item->window()->resetOpenGLState();
-    f->glViewport(0,0,simw,simh);
+    f->glViewport(0,0,m_simSize.width(),m_simSize.height());
     m_vao->bind();
 
     QOpenGLTexture den_tex(QImage(":/init.png"));
     den_tex.bind(0);
-    progInit.bind();
+    m_progInit->bind();
 
-    m_fieldFbo[0]->bind();
-    progInit.setUniformValue(0,GLint(0));
-    f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    m_fieldFbo[0]->release();
+    switch (m_item->m_initMode) {
+    case 0: case 1: default:
+        m_fieldFbo[0]->bind();
+        m_progInit->setUniformValue(0,GLint(0));
+        f->glDrawArrays(GL_TRIANGLES, 0, 6);
+        m_fieldFbo[0]->release();
 
-    m_fieldFbo[1]->bind();
-    f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    m_fieldFbo[1]->release();
+        m_fieldFbo[1]->bind();
+        f->glDrawArrays(GL_TRIANGLES, 0, 6);
+        m_fieldFbo[1]->release();
 
-    m_domainFbo->bind();
-    progInit.setUniformValue(0,GLint(1));
-    f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    m_domainFbo->release();
+        m_domainFbo->bind();
+        m_progInit->setUniformValue(0,GLint(1));
+        f->glDrawArrays(GL_TRIANGLES, 0, 6);
+        m_domainFbo->release();
+        break;
+    case 2: {
+        m_fieldFbo[m_cfbo]->bind();
+        f->glActiveTexture(GL_TEXTURE0);
+        f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[m_cfbo]->texture());
+        m_progInit->setUniformValue(0,GLint(m_item->m_initMode));
+        QPointF point = m_item->m_ellp;
+        point.setX(point.x()/m_item->width());
+        point.setY(point.y()/m_item->height());
+        m_progInit->setUniformValue(2,point);
+        m_progInit->setUniformValue(3,GLfloat(m_item->m_ellr));
+        m_progInit->setUniformValue(4,GLfloat(m_item->width()/m_item->height()));
+        f->glDrawArrays(GL_TRIANGLES, 0, 6);
+        m_fieldFbo[m_cfbo]->release();
+    }
+        break;
+    }
 
     m_vao->release();
 }
@@ -129,7 +138,7 @@ void FluidRenderer::render() {
 
     m_item->window()->resetOpenGLState();
 
-    f->glViewport(0,0,simw,simh);
+    f->glViewport(0,0,m_simSize.width(),m_simSize.height());
     m_vao->bind();
 
     f->glActiveTexture(GL_TEXTURE1);
@@ -147,12 +156,15 @@ void FluidRenderer::render() {
     }
 
     m_vao->release();
-    update();
+
+    if (m_running)
+        update();
 }
 
 void FluidRenderer::synchronize(QQuickFramebufferObject *item) {
     auto sim = dynamic_cast<FluidSim *>(item);
     if (!sim) return;
+    m_running = m_item->m_running;
     m_progDisp->bind();
     m_progDisp->setUniformValue(0,GLint(sim->m_display));
     m_progFluid->bind();
@@ -161,11 +173,18 @@ void FluidRenderer::synchronize(QQuickFramebufferObject *item) {
     m_progFluid->setUniformValue(3,GLfloat(sim->m_k));
     m_progFluid->setUniformValue(4,GLfloat(0),GLfloat(sim->m_g));
     m_iterations = sim->m_factor;
+
+    if (m_simSize != QSize(sim->m_simw,sim->m_simh)) {
+        m_simSize = QSize(sim->m_simw,sim->m_simh);
+        m_progFluid->setUniformValue(1,1./sim->m_simw,1./sim->m_simh);
+        initializeBuffer();
+    }
+
     m_progFluid->release();
 
-    if (sim->m_reset) {
-        sim->m_reset = false;
+    if (sim->m_initMode >= 0) {
         initializeBuffer();
+        sim->m_initMode = -1;
     }
 }
 

@@ -41,6 +41,9 @@ void main() {
         const vec3 ft = texelFetch(dom,UV+ivec2(0,1),0).xyz;
         const vec3 fb = texelFetch(dom,UV-ivec2(0,1),0).xyz;
 
+        fc.xyw = texture(dom,uv - dt*fc.xy*inv_size).xyw;
+//        fc.w *= 0.99;
+
         // grad p = (d/dx p, d/dy p)
         vec2 grad_p = vec2((fr.z-fl.z)/2, (ft.z-fb.z)/2);
 
@@ -48,23 +51,21 @@ void main() {
         float div_u = (fr.x-fl.x)/2 + (ft.y-fb.y)/2;
 
         // lap ú = (d2/dx2 u_x + d2/dy2 u_x, d2/dx2 u_y + d2/dy2 u_y)
-        vec2 lap_u = vec2((fr.x -2*fc.x + fl.x) / 4 + (ft.x -2*fc.x + fb.x) / 4,
-                          (fr.y -2*fc.y + fl.y) / 4 + (ft.y -2*fc.y + fb.y) / 4);
+        vec2 lap_u = (fr.xy -2*fc.xy + fl.xy)/4;
 
         // dp/dt + div pú = 0
         // dp/dt = -ú . grad p - p div ú
         // dp = (-ú . grad p - p div ú) dt
         // p = p_ + (-ú . grad p - p div ú) dt  // dp = p - p_
         float p = fc.z + (-dot(fc.xy,grad_p) - fc.z * div_u) * dt;
+        p = p + (1-p)*0.002;
         fc.z = clamp(p,0.2,50);
-
-        fc.xy = texture(dom,uv - dt*fc.xy*inv_size).xy;
 
         // grad P ≃ K grad p
         // du/dt = - grad P / p + ǵ + mu/p lap u
         // ú = ú_ + ( - K/p grad p + g + mu/p lap ú) dt  // du = ú - ú_
-        vec2 u = fc.xy + (-K/fc.z * grad_p + acc + v/fc.z * lap_u) * dt;
-        fc.xy = u;
+        fc.xy += (-K/fc.z * grad_p + acc + v/fc.z * lap_u) * dt;
+
 
         const mat4 Directions = mat4(
             vec4( 1, 0,0,0),
@@ -78,8 +79,7 @@ void main() {
             }
         }
 
-        fc.w = texture(dom,uv - dt*fc.xy*inv_size).w * 0.99995;
-//        vec2 rnd = random2(uv+u); fc.w += rnd.x == 0 && rnd.y == 0 ? 0.1 : 0;
+//        vec2 rnd = random2(uv+fc.xy); fc.w += rnd.x == 0 && rnd.y == 0 ? 0.1 : 0;
     }
 
     fragColor = fc;
