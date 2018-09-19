@@ -30,7 +30,7 @@ void main() {
     const ivec2 UV = ivec2(gl_FragCoord.xy);
     vec4 fc = texelFetch(dom, UV, 0);
 
-    vec2 acc = g.y > 0 ? fc.w * g : max(0, 1 - fc.w) * g;
+    vec2 acc = fc.w * g;
 
     if (texelFetch(den, UV, 0).x > 0) {
         const vec3 fr = texelFetch(dom, UV + ivec2(1, 0), 0).xyz;
@@ -54,9 +54,9 @@ void main() {
         // dp/dt = -ú . grad p - p div ú
         // dp = (-ú . grad p - p div ú) dt
         // p = p_ + (-ú . grad p - p div ú) dt  // dp = p - p_
-        float p = fc.z + (-dot(fc.xy,grad_p) - fc.z * div_u) * dt;
+        float p = fc.z + (-dot(fc.xy, grad_p) - fc.z * div_u) * dt;
         p += (1 - p) * 0.001;
-        fc.w += (0.1 - fc.w) * 0.001;
+//        fc.w += (0.1 - fc.w) * 0.001;
         fc.z = clamp(p, 0.2, 100);
 
         // grad P ≃ K grad p

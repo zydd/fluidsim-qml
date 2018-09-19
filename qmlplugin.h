@@ -12,7 +12,6 @@ class QmlPlugin : public QQmlExtensionPlugin
 
 public:
     inline void registerTypes(const char *uri) {
-        printf("pluigioadfia");
         Q_ASSERT(uri == QLatin1String("zydd.fluid"));
         qmlRegisterType<FluidSim>(uri, 1, 0, "FluidSim");
     }

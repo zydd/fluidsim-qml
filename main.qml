@@ -21,17 +21,29 @@ Item {
         factor: Math.round(1+99*Math.pow(factor.value,2))
         simw: 256*1366/768
         simh: 256
-        running: false
+        running: true
         focus: true
         display: 0
+
+        property int button: 0
 
         MouseArea {
             id: ma
             anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             onDoubleClicked: sim.reset()
-            onPressed: sim.running = true
+            onPressed: {
+                sim.button = mouse.button
+                sim.running = true
+            }
+
+            onReleased: {
+                if (sim.button === mouse.button)
+                    sim.button = 0;
+            }
+
             onPressAndHold: {
-                if (mouseX < 3 && mouseY < 3)
+                if (mouseX < 10 && mouseY < 10)
                     config.visible = true
             }
         }
@@ -42,7 +54,8 @@ Item {
             interval: 16
             onTriggered: {
                 stopsim.restart()
-                sim.den_ellipse(Qt.point(ma.mouseX,ma.mouseY),brush.value)
+                sim.den_ellipse(Qt.point(ma.mouseX,ma.mouseY),brush.value,
+                                sim.button === Qt.RightButton ? 2 : -2)
             }
         }
 

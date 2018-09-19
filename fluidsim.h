@@ -114,10 +114,11 @@ public slots:
         update();
     }
 
-    inline void den_ellipse(QPoint pos, qreal rad) {
+    inline void den_ellipse(QPoint pos, qreal rad, qreal density) {
         m_initMode = 2;
         m_ellp = pos;
         m_ellr = rad;
+        m_elld = density;
         update();
     }
 
@@ -140,6 +141,7 @@ private:
     int m_initMode = -1;
     QPoint m_ellp;
     qreal m_ellr;
+    qreal m_elld;
     bool m_running = true;
 
 signals:

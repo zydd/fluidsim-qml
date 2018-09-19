@@ -113,6 +113,7 @@ void FluidRenderer::initializeBuffer() {
         m_progInit->setUniformValue(2,point);
         m_progInit->setUniformValue(3, GLfloat(m_item->m_ellr));
         m_progInit->setUniformValue(4, GLfloat(m_item->width()/m_item->height()));
+        m_progInit->setUniformValue(5, GLfloat(m_item->m_elld));
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
         m_fieldFbo[m_cfbo]->release();
     }
