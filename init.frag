@@ -1,7 +1,4 @@
-#version 130
-#extension GL_ARB_shading_language_420pack: require
-#extension GL_ARB_explicit_uniform_location: require
-#extension GL_ARB_explicit_attrib_location: require
+#version 440
 
 in highp vec2 uv;
 layout(location = 0) out highp vec4 fragColor;
@@ -17,12 +14,15 @@ layout(location = 4) uniform float ratio;
 void main() {
     const ivec2 UV = ivec2(gl_FragCoord.xy);
 //    vec2 coord = 2*uv-1;
-//    float phy = mod(atan(coord.y,coord.x), 2.*3.1415926536);
+//    float phy = mod(atan(coord.y,coord.x), 2.*3.14159265359);
 
     switch (idx) {
     case 0:
 //        fragColor = vec4(0,0,1,texture(den,uv).x*7);
-        fragColor = vec4(0,0,1,0);
+//        if (UV.x != 0 && UV.y != 0 && UV.x != size.x-1 && UV.y != size.y-1)
+//            fragColor = vec4(0,0,1,0);
+//        else
+            fragColor = vec4(0,0,1,0);
         break;
     case 1:
         fragColor = vec4(1);
@@ -35,9 +35,9 @@ void main() {
         vec2 st = uv;
         st.x *= ratio;
         st -= point * vec2(ratio,1);
-        fragColor = texelFetch(den,UV,0);
-        fragColor.w += clamp(1-2/rad*sqrt(dot(st,st)),0,1);
-        fragColor.z += 0.5*clamp(1-1/rad*sqrt(dot(st,st)),0,1);
+        fragColor = texelFetch(den, UV, 0);
+        fragColor.z += clamp(1 - 1 / rad*sqrt(dot(st, st)), 0, 1);
+        fragColor.w += clamp(1 - 1 / rad * sqrt(dot(st, st)), 0, 1);
         break;
     }
     }

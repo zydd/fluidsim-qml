@@ -2,7 +2,7 @@ import QtQuick 2.7
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.0
 import QtQuick.Layouts 1.3
-import zydd.FluidSim 1.0
+import zydd.fluid 1.0
 
 Item {
     id: root

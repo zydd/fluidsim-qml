@@ -4,7 +4,7 @@
 #include <QtOpenGL/QtOpenGL>
 
 static const char *vertexShaderSource =
-    "#version 130\n"
+    "#version 330\n"
     "in vec2 vertex;\n"
     "out vec2 uv;\n"
 
@@ -73,7 +73,7 @@ void FluidRenderer::initializeBuffer() {
         }
         m_domainFbo = new QOpenGLFramebufferObject(m_simSize,
                                   QOpenGLFramebufferObject::NoAttachment,
-                                  GL_TEXTURE_2D,GL_LUMINANCE4);
+                                  GL_TEXTURE_2D,GL_RGBA8);
         m_progInit->bind();
         m_progInit->setUniformValue(1,m_simSize);
     }
@@ -89,7 +89,7 @@ void FluidRenderer::initializeBuffer() {
     switch (m_item->m_initMode) {
     case 0: case 1: default:
         m_fieldFbo[0]->bind();
-        m_progInit->setUniformValue(0,GLint(0));
+        m_progInit->setUniformValue(0, GLint(0));
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
         m_fieldFbo[0]->release();
 
@@ -98,7 +98,7 @@ void FluidRenderer::initializeBuffer() {
         m_fieldFbo[1]->release();
 
         m_domainFbo->bind();
-        m_progInit->setUniformValue(0,GLint(1));
+        m_progInit->setUniformValue(0, GLint(1));
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
         m_domainFbo->release();
         break;
@@ -106,13 +106,13 @@ void FluidRenderer::initializeBuffer() {
         m_fieldFbo[m_cfbo]->bind();
         f->glActiveTexture(GL_TEXTURE0);
         f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[m_cfbo]->texture());
-        m_progInit->setUniformValue(0,GLint(m_item->m_initMode));
+        m_progInit->setUniformValue(0, GLint(m_item->m_initMode));
         QPointF point = m_item->m_ellp;
-        point.setX(point.x()/m_item->width());
-        point.setY(point.y()/m_item->height());
+        point.setX(point.x() / m_item->width());
+        point.setY(point.y() / m_item->height());
         m_progInit->setUniformValue(2,point);
-        m_progInit->setUniformValue(3,GLfloat(m_item->m_ellr));
-        m_progInit->setUniformValue(4,GLfloat(m_item->width()/m_item->height()));
+        m_progInit->setUniformValue(3, GLfloat(m_item->m_ellr));
+        m_progInit->setUniformValue(4, GLfloat(m_item->width()/m_item->height()));
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
         m_fieldFbo[m_cfbo]->release();
     }

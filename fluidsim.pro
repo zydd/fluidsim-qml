@@ -11,15 +11,15 @@ HEADERS += \
     fluidsim.h \
     qmlplugin.h
 
-DESTDIR = imports/zydd/FluidSim
+DESTDIR = imports/zydd/fluid
 TARGET = fluidsim
 
 QML_IMPORT_PATH =
 DEFINES += QT_DEPRECATED_WARNINGS
 
-target.path = imports/zydd/FluidSim
+target.path = imports/zydd/fluid
 pluginfiles.files = qmldir
-pluginfiles.path = imports/zydd/FluidSim
+pluginfiles.path = imports/zydd/fluid
 
 INSTALLS += target pluginfiles
 

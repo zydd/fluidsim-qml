@@ -1,7 +1,4 @@
-#version 130
-#extension GL_ARB_shading_language_420pack: require
-#extension GL_ARB_explicit_uniform_location: require
-#extension GL_ARB_explicit_attrib_location: require
+#version 440
 
 in highp vec2 uv;
 out highp vec4 fragColor;
