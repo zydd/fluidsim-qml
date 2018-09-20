@@ -17,6 +17,7 @@ Window {
         g: g.value
         k: k.value
         v: v.value
+        vconf: vconf.value
         dt: 0.001+0.999*Math.pow(dt.value,2)
         factor: Math.round(1+99*Math.pow(factor.value,2))
         simw: 256*1366/768
@@ -58,7 +59,7 @@ Window {
                 if (stopsim.running)
                     stopsim.restart()
                 sim.den_ellipse(Qt.point(ma.mouseX,ma.mouseY),brush.value,
-                                sim.button === Qt.RightButton ? 1 : -1)
+                                sim.button === Qt.RightButton ? 0.5 : -0.5)
             }
         }
 
@@ -90,17 +91,17 @@ Window {
 
             Column {
                 RowLayout {
-                    Slider { id: g; from: -1; to: 1; stepSize: 0.001; value: -1 } // 0.07
+                    Slider { id: g; from: -1; to: 1; stepSize: 0.001; value: 0.0250 } // 0.07
                     Label { text: 'g: ' + sim.g.toFixed(4) }
                 }
 
                 RowLayout {
-                    Slider { id: k; from: 0; to: 50; stepSize: 0.01; value: 10 } // 2
+                    Slider { id: k; from: 0; to: 50; stepSize: 0.01; value: 3.44 } // 2
                     Label { text: 'k: ' + sim.k.toFixed(4) }
                 }
 
                 RowLayout {
-                    Slider { id: v; from: 0; to: 10; stepSize: 0.001; value: 2.5 } // 0.05
+                    Slider { id: v; from: 0; to: 10; stepSize: 0.001; value: 0.25 } // 0.05
                     Label { text: 'v: ' + v.value.toFixed(4) }
                 }
 
@@ -110,7 +111,12 @@ Window {
                 }
 
                 RowLayout {
-                    Slider { id: factor; from: 0; to: 1; value: Math.sqrt(3/100) }
+                    Slider { id: vconf; from: 0; to: 5; stepSize: 0.001; value: 0.688 }
+                    Label { text: 'vconf: ' + sim.vconf.toFixed(4) }
+                }
+
+                RowLayout {
+                    Slider { id: factor; from: 0; to: 1; value: Math.sqrt(70/100) }
                     Label { text: 'factor: ' + sim.factor }
                 }
 
@@ -142,33 +148,33 @@ Window {
         }
     }
 
-    Rectangle {
+    Canvas {
         visible: false
         focus: false
-        color: '#ff0000'
         width: sim.simw
         height: sim.simh
         id: source
 
-        Rectangle {
-            color: '#ff0080'
-            x: 0
-            y: 4*parent.height/10
-            width: parent.width
-            height: parent.height/10
+        onPaint: {
+            var ctx = getContext("2d");
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle ='#ff0040';
+            ctx.fillRect(width/3, 4*height/10, width/3, height/10);
+
+            ctx.fillStyle ='#ff4000';
+            ctx.fillRect(width/3, 5*height/10, width/3, height/10);
+
+//            for (var i = 0; i < 5; ++i)
+//                ctx.ellipse(width/3+i*width/15, 7*height/10, 1.5*height/10, 1.5*height/10).fill();
+
+            source.grabToImage(function(img) {
+                sim.setInitTex(img);
+                sim.reset();
+            })
         }
 
-        Rectangle {
-            color: '#ff8000'
-            x: 0
-            y: 5*parent.height/10
-            width: parent.width
-            height: parent.height/10
-        }
-
-        Component.onCompleted: source.grabToImage(function(img) {
-            sim.setInitTex(img);
-            sim.reset();
-        })
+        Component.onCompleted: requestPaint()
     }
 }

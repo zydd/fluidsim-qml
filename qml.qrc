@@ -3,6 +3,5 @@
         <file>display.frag</file>
         <file>fluid.frag</file>
         <file>init.frag</file>
-        <file>vorticity.frag</file>
     </qresource>
 </RCC>

@@ -177,10 +177,11 @@ void FluidRenderer::synchronize(QQuickFramebufferObject *item) {
     m_progDisp->bind();
     m_progDisp->setUniformValue(0,GLint(sim->m_display));
     m_progFluid->bind();
-    m_progFluid->setUniformValue(0,GLfloat(sim->m_dt));
-    m_progFluid->setUniformValue(2,GLfloat(sim->m_v));
-    m_progFluid->setUniformValue(3,GLfloat(sim->m_k));
-    m_progFluid->setUniformValue(4,GLfloat(0),GLfloat(sim->m_g));
+    m_progFluid->setUniformValue(0, GLfloat(sim->m_dt));
+    m_progFluid->setUniformValue(2, GLfloat(sim->m_v));
+    m_progFluid->setUniformValue(3, GLfloat(sim->m_k));
+    m_progFluid->setUniformValue(4, GLfloat(0), GLfloat(sim->m_g));
+    m_progFluid->setUniformValue(5, GLfloat(sim->m_vconf));
     m_iterations = sim->m_factor;
 
     if (m_simSize != QSize(sim->m_simw, sim->m_simh)) {

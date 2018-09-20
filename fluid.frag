@@ -12,6 +12,7 @@ layout(location = 1) uniform vec2 inv_size;
 layout(location = 2) uniform float v;
 layout(location = 3) uniform float K;
 layout(location = 4) uniform vec2 g;
+layout(location = 5) uniform float vconf;
 
 vec2 random2(vec2 st){
   st = vec2(dot(st, vec2(127.1, 311.7)),
@@ -38,9 +39,9 @@ void main() {
         const vec3 ft = texelFetch(dom, UV + ivec2(0, 1), 0).xyz;
         const vec3 fb = texelFetch(dom, UV - ivec2(0, 1), 0).xyz;
 
+        // advection
         fc.xyw = texture(dom, uv - dt * fc.xy * inv_size).xyw;
         fc.w += ic.y;
-        vec2 acc = fc.w * g;
 
         // grad p = (d/dx p, d/dy p)
         vec2 grad_p = vec2((fr.z - fl.z) / 2, (ft.z - fb.z) / 2);
@@ -57,13 +58,34 @@ void main() {
         // p = p_ + (-ú . grad p - p div ú) dt  // dp = p - p_
         float p = fc.z + (-dot(fc.xy, grad_p) - fc.z * div_u) * dt;
         p += (2 - p) * 0.001;
-        fc.z = clamp(p, 0.2, 100);
+        fc.z = clamp(p, 0.2, 10);
 
         // grad P ≃ K grad p
         // du/dt = - grad P / p + ǵ + mu/p lap u
         // ú = ú_ + ( - K/p grad p + g + mu/p lap ú) dt  // du = ú - ú_
-        fc.xy += (-K/fc.z * grad_p + acc + v/fc.z * lap_u) * dt;
+        fc.xy += (-K/fc.z * grad_p + fc.w * fc.z * g + v/fc.z * lap_u) * dt;
 
+        // vorticity confinement
+        const float vC = texelFetch(den, UV, 0).z;
+        const float vR = texelFetch(den, UV + ivec2(1, 0), 0).z;
+        const float vL = texelFetch(den, UV - ivec2(1, 0), 0).z;
+        const float vT = texelFetch(den, UV + ivec2(0, 1), 0).z;
+        const float vB = texelFetch(den, UV - ivec2(0, 1), 0).z;
+
+        // n = grad(vorticity)
+        vec2 n = vec2(abs(vT) - abs(vB), abs(vR) - abs(vL));
+        // Safe normalize
+        const float EPSILON = 2.4414e-4;
+        float isqrt = 1/sqrt(max(EPSILON, dot(n, n)));
+        // omega = n / |n|
+        vec2 omega = n * isqrt;
+        // f = e(omega x n)*dx
+        vec2 force = vconf * (vC * vec2(omega.y, -omega.x));
+        fc.xy += force * dt;
+
+        ic.z = (ft.y - fb.y - fl.x + fr.x) / 2;
+
+        // boundary conditions
         if (texelFetch(den, UV + ivec2( 1, 0), 0).x < 0.1
                 || texelFetch(den, UV + ivec2(-1, 0), 0).x < 0.1) {
 //            fc.y += abs(fc.x) * sign(fc.y);
@@ -74,7 +96,10 @@ void main() {
             fc.y = 0;
         }
 
-//        vec2 rnd = random2(uv+fc.xy); fc.w += rnd.x == 0 && rnd.y == 0 ? 1 : 0;
+//        vec2 rnd = random2(uv+fc.xy);
+//            fc.w -= rnd.x == 0 && rnd.y == 0 ? 5 : 0;
+//        vec2 rnd2 = random2(1.1+(uv+fc.xy));
+//            fc.w += rnd2.x == 0 && rnd2.y == 0 ? 5 : 0;
     }
 
     dom_out = fc;

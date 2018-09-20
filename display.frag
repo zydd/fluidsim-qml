@@ -16,7 +16,8 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
     const ivec2 UV = ivec2(gl_FragCoord.xy)/2;
-    float obs = texture(den,uv).x;
+    vec4 de = texture(den,uv);
+    float obs = de.x;
     vec4 fc = texture(dom,uv);
     float d = fc.w * fc.w;
     switch (display) {
@@ -25,7 +26,8 @@ void main() {
     case 1: fragColor = vec4(vec3(sqrt(dot(fc.xy,fc.xy))/3),1); break;
     case 2: fragColor = vec4(fc.xy+0.5,1,1); break;
     case 3: fragColor = vec4(fc.zzz/2,1); break;
-    case 4: fragColor = vec4(log(1+0.5*log(1+abs(fc.www))),1); break;
-    case 5: fragColor = vec4(hsv2rgb(vec3(clamp(-0.6+log(d)*0.4,0,1),1,d/2)),1); break;
+    case 4: fragColor = vec4(de.zzz/2 + 0.5,1); break;
+    case 5: fragColor = vec4(log(1+0.5*log(1+abs(fc.www))),1); break;
+    case 6: fragColor = vec4(hsv2rgb(vec3(clamp(-0.6+log(d)*0.4,0,1),1,d/2)),1); break;
     }
 }

@@ -26,7 +26,6 @@ INSTALLS += target pluginfiles
 DISTFILES += \
     qmldir \
     main.qml \
-    vorticity.frag \
     display.frag \
     fluid.frag \
     init.frag

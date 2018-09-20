@@ -46,6 +46,7 @@ public:
     Q_PROPERTY(qreal k MEMBER m_k WRITE setK NOTIFY kChanged)
     Q_PROPERTY(qreal dt MEMBER m_dt WRITE setDt NOTIFY dtChanged)
     Q_PROPERTY(qreal v MEMBER m_v WRITE setV NOTIFY vChanged)
+    Q_PROPERTY(qreal vconf MEMBER m_vconf WRITE setVConf NOTIFY vconfChanged)
     Q_PROPERTY(int factor MEMBER m_factor WRITE setFactor NOTIFY factorChanged)
     Q_PROPERTY(int display MEMBER m_display WRITE setDisplay NOTIFY displayChanged)
     Q_PROPERTY(int simw MEMBER m_simw WRITE setSimw NOTIFY simwChanged)
@@ -137,11 +138,19 @@ public slots:
         m_init_tex = tex->image();
     }
 
+    inline void setVConf(qreal v) {
+        if (m_vconf == v) return;
+        m_vconf = v;
+        emit vconfChanged(v);
+        update();
+    }
+
 private:
     qreal m_g = 0.07;
     qreal m_k = 4;
     qreal m_dt = 0.05;
     qreal m_v = 0.05;
+    qreal m_vconf = 0.2;
     int m_factor = 1;
     int m_display = 0;
     int m_simw = 256;
@@ -158,6 +167,7 @@ signals:
     void dtChanged(qreal);
     void kChanged(qreal);
     void vChanged(qreal);
+    void vconfChanged(qreal);
     void factorChanged(unsigned);
     void displayChanged(unsigned display);
     void simwChanged(unsigned simw);
