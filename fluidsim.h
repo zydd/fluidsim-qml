@@ -2,6 +2,7 @@
 #define FLUIDSIM_H
 
 #include <QQuickFramebufferObject>
+#include <QQuickItemGrabResult>
 
 class QOpenGLTexture;
 class QOpenGLShaderProgram;
@@ -28,6 +29,7 @@ private:
     QOpenGLFramebufferObject *m_fieldFbo[2] = {nullptr, nullptr};
     QOpenGLFramebufferObject *m_domainFbo = nullptr;
     QOpenGLVertexArrayObject *m_vao;
+    QImage m_init_tex;
     int m_cfbo = 0;
     int m_iterations = 1;
     bool m_running = true;
@@ -50,6 +52,9 @@ public:
     Q_PROPERTY(int simw MEMBER m_simw WRITE setSimw NOTIFY simwChanged)
     Q_PROPERTY(int simh MEMBER m_simh WRITE setSimh NOTIFY simhChanged)
     Q_PROPERTY(bool running MEMBER m_running WRITE setRunning NOTIFY runningChanged)
+
+    FluidSim();
+
     virtual QQuickFramebufferObject::Renderer *createRenderer() const override;
 
 public slots:
@@ -129,6 +134,10 @@ public slots:
         update();
     }
 
+    inline void setInitTex(QQuickItemGrabResult *tex) {
+        m_init_tex = tex->image();
+    }
+
 private:
     qreal m_g = 0.07;
     qreal m_k = 4;
@@ -143,6 +152,7 @@ private:
     qreal m_ellr;
     qreal m_elld;
     bool m_running = true;
+    QImage m_init_tex;
 
 signals:
     void gChanged(qreal);

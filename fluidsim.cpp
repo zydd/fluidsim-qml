@@ -66,14 +66,14 @@ void FluidRenderer::initializeBuffer() {
         for (int i = 0; i < 2; ++i) {
             m_fieldFbo[i] = new QOpenGLFramebufferObject(m_simSize,
                                       QOpenGLFramebufferObject::NoAttachment,
-                                      GL_TEXTURE_2D,GL_RGBA16F);
-            f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[i]->texture());
+                                      GL_TEXTURE_2D, GL_RGBA16F);
+            f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[i]->texture());
             f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
             f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
         }
         m_domainFbo = new QOpenGLFramebufferObject(m_simSize,
                                   QOpenGLFramebufferObject::NoAttachment,
-                                  GL_TEXTURE_2D,GL_RGBA8);
+                                  GL_TEXTURE_2D, GL_RGBA16F);
         m_progInit->bind();
         m_progInit->setUniformValue(1,m_simSize);
     }
@@ -82,8 +82,9 @@ void FluidRenderer::initializeBuffer() {
     f->glViewport(0,0,m_simSize.width(),m_simSize.height());
     m_vao->bind();
 
-    QOpenGLTexture den_tex(QImage(":/init.png"));
+    QOpenGLTexture den_tex(m_init_tex);
     den_tex.bind(0);
+
     m_progInit->bind();
 
     switch (m_item->m_initMode) {
@@ -105,7 +106,7 @@ void FluidRenderer::initializeBuffer() {
     case 2: {
         m_fieldFbo[m_cfbo]->bind();
         f->glActiveTexture(GL_TEXTURE0);
-        f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[m_cfbo]->texture());
+        f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->texture());
         m_progInit->setUniformValue(0, GLint(m_item->m_initMode));
         QPointF point = m_item->m_ellp;
         point.setX(point.x() / m_item->width());
@@ -165,6 +166,7 @@ void FluidRenderer::render() {
 void FluidRenderer::synchronize(QQuickFramebufferObject *item) {
     auto sim = dynamic_cast<FluidSim *>(item);
     if (!sim) return;
+    bool reinit_buffer = false;
     m_running = m_item->m_running;
     m_progDisp->bind();
     m_progDisp->setUniformValue(0,GLint(sim->m_display));
@@ -175,15 +177,20 @@ void FluidRenderer::synchronize(QQuickFramebufferObject *item) {
     m_progFluid->setUniformValue(4,GLfloat(0),GLfloat(sim->m_g));
     m_iterations = sim->m_factor;
 
-    if (m_simSize != QSize(sim->m_simw,sim->m_simh)) {
-        m_simSize = QSize(sim->m_simw,sim->m_simh);
-        m_progFluid->setUniformValue(1,1./sim->m_simw,1./sim->m_simh);
-        initializeBuffer();
+    if (m_simSize != QSize(sim->m_simw, sim->m_simh)) {
+        m_simSize = QSize(sim->m_simw, sim->m_simh);
+        m_progFluid->setUniformValue(1, 1./sim->m_simw, 1./sim->m_simh);
+        reinit_buffer = true;
     }
 
     m_progFluid->release();
 
-    if (sim->m_initMode >= 0) {
+    if (m_init_tex != sim->m_init_tex) {
+        m_init_tex = sim->m_init_tex;
+        reinit_buffer = true;
+    }
+
+    if (reinit_buffer || sim->m_initMode >= 0) {
         initializeBuffer();
         sim->m_initMode = -1;
     }
@@ -192,6 +199,11 @@ void FluidRenderer::synchronize(QQuickFramebufferObject *item) {
 QOpenGLFramebufferObject *FluidRenderer::createFramebufferObject(const QSize &size) {
     return new QOpenGLFramebufferObject(size, QOpenGLFramebufferObject::NoAttachment);
 }
+
+FluidSim::FluidSim() {
+    m_init_tex = QPixmap(1,1).toImage();
+}
+
 QQuickFramebufferObject::Renderer *FluidSim::createRenderer() const {
     return new FluidRenderer(this);
 }

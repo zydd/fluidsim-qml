@@ -23,14 +23,11 @@ void main() {
 //        if (UV.x != 0 && UV.y != 0 && UV.x != size.x-1 && UV.y != size.y-1)
 //            fragColor = vec4(0,0,1,0);
 //        else
-            fragColor = vec4(0,0,1,0);
+            fragColor = vec4(0,0,2,0);
         break;
     case 1:
-        fragColor = vec4(1);
-//        if (uv.t > 0.5 && uv.t < 5./6) {
-//            if (abs(fract(6*uv.t) - 0.5) < 0.3 && abs(fract(6*uv.s) - 0.5) < 0.3)
-//                fragColor.x = 0;
-//        }
+        fragColor = texelFetch(den, UV, 0);
+        fragColor.yz *= 0.005;
         break;
     case 2: {
         vec2 st = uv;

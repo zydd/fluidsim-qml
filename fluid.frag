@@ -29,17 +29,17 @@ void main() {
 
     const ivec2 UV = ivec2(gl_FragCoord.xy);
     vec4 fc = texelFetch(dom, UV, 0);
+    vec4 ic = texelFetch(den, UV, 0);
 
-    vec2 acc = fc.w * g;
-
-    if (texelFetch(den, UV, 0).x > 0) {
+    if (ic.x != 0) {
         const vec3 fr = texelFetch(dom, UV + ivec2(1, 0), 0).xyz;
         const vec3 fl = texelFetch(dom, UV - ivec2(1, 0), 0).xyz;
         const vec3 ft = texelFetch(dom, UV + ivec2(0, 1), 0).xyz;
         const vec3 fb = texelFetch(dom, UV - ivec2(0, 1), 0).xyz;
 
         fc.xyw = texture(dom, uv - dt * fc.xy * inv_size).xyw;
-//        fc.w *= g.y < 0 ? 0.992 : 1;
+        fc.w += ic.y - ic.z;
+        vec2 acc = fc.w * g;
 
         // grad p = (d/dx p, d/dy p)
         vec2 grad_p = vec2((fr.z - fl.z) / 2, (ft.z - fb.z) / 2);
@@ -55,8 +55,7 @@ void main() {
         // dp = (-ú . grad p - p div ú) dt
         // p = p_ + (-ú . grad p - p div ú) dt  // dp = p - p_
         float p = fc.z + (-dot(fc.xy, grad_p) - fc.z * div_u) * dt;
-        p += (1 - p) * 0.001;
-//        fc.w += (0.1 - fc.w) * 0.001;
+        p += (2 - p) * 0.001;
         fc.z = clamp(p, 0.2, 100);
 
         // grad P ≃ K grad p
@@ -66,12 +65,11 @@ void main() {
 
         if (texelFetch(den, UV + ivec2( 1, 0), 0).x < 0.1
                 || texelFetch(den, UV + ivec2(-1, 0), 0).x < 0.1) {
-            fc.y += abs(fc.x) * sign(fc.y);
+//            fc.y += abs(fc.x) * sign(fc.y);
             fc.x = 0;
         } if (texelFetch(den, UV + ivec2( 0,-1), 0).x < 0.1
                 || texelFetch(den, UV + ivec2( 0, 1), 0).x < 0.1) {
-            fc.xy *= (1 - ivec2( 0, 1));
-            fc.x += abs(fc.y) * sign(fc.x);
+//            fc.x += abs(fc.y) * sign(fc.x);
             fc.y = 0;
         }
 
