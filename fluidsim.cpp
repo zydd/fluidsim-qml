@@ -41,7 +41,7 @@ FluidRenderer::FluidRenderer(const FluidSim *parent)
 
     m_vbo->allocate(vertices, sizeof(vertices));
     f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    f->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
     m_vbo->release();
 }
 
@@ -59,97 +59,101 @@ QOpenGLShaderProgram *FluidRenderer::linkFragment(QString frag) {
 void FluidRenderer::initializeBuffer() {
     QOpenGLExtraFunctions *f = QOpenGLContext::currentContext()->extraFunctions();
 
-    if (! m_domainFbo || m_domainFbo->size() != m_simSize) {
-        delete m_domainFbo;
-        delete m_fieldFbo[0];
-        delete m_fieldFbo[1];
+    if (! m_fieldFbo[0] || m_fieldFbo[0]->size() != m_simSize) {
         for (int i = 0; i < 2; ++i) {
+            delete m_fieldFbo[i];
             m_fieldFbo[i] = new QOpenGLFramebufferObject(m_simSize,
                                       QOpenGLFramebufferObject::NoAttachment,
                                       GL_TEXTURE_2D, GL_RGBA16F);
+            m_fieldFbo[i]->addColorAttachment(m_simSize, GL_RGBA16F);
             f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[i]->texture());
             f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
             f->glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+
         }
-        m_domainFbo = new QOpenGLFramebufferObject(m_simSize,
-                                  QOpenGLFramebufferObject::NoAttachment,
-                                  GL_TEXTURE_2D, GL_RGBA16F);
-        m_progInit->bind();
-        m_progInit->setUniformValue(1,m_simSize);
     }
 
     m_item->window()->resetOpenGLState();
-    f->glViewport(0,0,m_simSize.width(),m_simSize.height());
+    f->glViewport(0, 0, m_simSize.width(),m_simSize.height());
     m_vao->bind();
 
-    QOpenGLTexture den_tex(m_init_tex);
-    den_tex.bind(0);
-
     m_progInit->bind();
+    m_progInit->setUniformValue(0, GLint(m_item->m_initMode));
+    GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 
     switch (m_item->m_initMode) {
-    case 0: case 1: default:
+    case 0: case 1: {
+        qDebug() << "init0";
+        QOpenGLTexture den_tex(m_init_tex);
+        f->glActiveTexture(GL_TEXTURE1);
+        den_tex.bind();
+
         m_fieldFbo[0]->bind();
-        m_progInit->setUniformValue(0, GLint(0));
+        f->glDrawBuffers(2, bufs);
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
         m_fieldFbo[0]->release();
 
         m_fieldFbo[1]->bind();
+        f->glDrawBuffers(2, bufs);
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
         m_fieldFbo[1]->release();
 
-        m_domainFbo->bind();
-        m_progInit->setUniformValue(0, GLint(1));
-        f->glDrawArrays(GL_TRIANGLES, 0, 6);
-        m_domainFbo->release();
         break;
+    }
     case 2: {
-        m_fieldFbo[m_cfbo]->bind();
+        m_fieldFbo[!m_cfbo]->bind();
         f->glActiveTexture(GL_TEXTURE0);
-        f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->texture());
-        m_progInit->setUniformValue(0, GLint(m_item->m_initMode));
+        f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->textures()[0]);
+        f->glActiveTexture(GL_TEXTURE1);
+        f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->textures()[1]);
+
         QPointF point = m_item->m_ellp;
         point.setX(point.x() / m_item->width());
         point.setY(point.y() / m_item->height());
-        m_progInit->setUniformValue(2,point);
+        m_progInit->setUniformValue(2, point);
         m_progInit->setUniformValue(3, GLfloat(m_item->m_ellr));
-        m_progInit->setUniformValue(4, GLfloat(m_item->width()/m_item->height()));
+        m_progInit->setUniformValue(4, GLfloat(m_item->width() / m_item->height()));
         m_progInit->setUniformValue(5, GLfloat(m_item->m_elld));
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
-        m_fieldFbo[m_cfbo]->release();
+        m_fieldFbo[!m_cfbo]->release();
+
+        m_cfbo = !m_cfbo;
+        break;
     }
+    default:
+        qDebug() << "init-1" << m_item->m_initMode;
         break;
     }
 
     m_vao->release();
+    m_item->window()->resetOpenGLState();
 }
 
 void FluidRenderer::render() {
-    auto f = QOpenGLContext::currentContext()->functions();
+    auto f = QOpenGLContext::currentContext()->extraFunctions();
 
     m_vao->bind();
-
-    f->glActiveTexture(GL_TEXTURE0);
-    f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[m_cfbo]->texture());
-    f->glActiveTexture(GL_TEXTURE1);
-    f->glBindTexture(GL_TEXTURE_2D,m_domainFbo->texture());
-
     m_progDisp->bind();
+    f->glActiveTexture(GL_TEXTURE0);
+    f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->textures()[0]);
+    f->glActiveTexture(GL_TEXTURE1);
+    f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->textures()[1]);
     f->glDrawArrays(GL_TRIANGLES, 0, 6);
     m_vao->release();
 
     m_item->window()->resetOpenGLState();
 
     f->glViewport(0,0,m_simSize.width(),m_simSize.height());
+
     m_vao->bind();
 
-    f->glActiveTexture(GL_TEXTURE1);
-    f->glBindTexture(GL_TEXTURE_2D,m_domainFbo->texture());
     for (int i = 0; i < m_iterations; ++i) {
-        f->glActiveTexture(GL_TEXTURE0);
-        f->glBindTexture(GL_TEXTURE_2D,m_fieldFbo[m_cfbo]->texture());
-
         m_fieldFbo[!m_cfbo]->bind();
+        f->glActiveTexture(GL_TEXTURE0);
+        f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->textures()[0]);
+        f->glActiveTexture(GL_TEXTURE1);
+        f->glBindTexture(GL_TEXTURE_2D, m_fieldFbo[m_cfbo]->textures()[1]);
+
         m_progFluid->bind();
         f->glDrawArrays(GL_TRIANGLES, 0, 6);
         m_fieldFbo[!m_cfbo]->release();
@@ -158,6 +162,8 @@ void FluidRenderer::render() {
     }
 
     m_vao->release();
+
+    m_item->window()->resetOpenGLState();
 
     if (m_running)
         update();
@@ -179,7 +185,7 @@ void FluidRenderer::synchronize(QQuickFramebufferObject *item) {
 
     if (m_simSize != QSize(sim->m_simw, sim->m_simh)) {
         m_simSize = QSize(sim->m_simw, sim->m_simh);
-        m_progFluid->setUniformValue(1, 1./sim->m_simw, 1./sim->m_simh);
+        m_progFluid->setUniformValue(1, 1.0f / sim->m_simw, 1.0f / sim->m_simh);
         reinit_buffer = true;
     }
 

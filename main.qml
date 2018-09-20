@@ -58,7 +58,7 @@ Window {
                 if (stopsim.running)
                     stopsim.restart()
                 sim.den_ellipse(Qt.point(ma.mouseX,ma.mouseY),brush.value,
-                                sim.button === Qt.RightButton ? 2 : -1)
+                                sim.button === Qt.RightButton ? 1 : -1)
             }
         }
 

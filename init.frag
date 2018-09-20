@@ -1,9 +1,11 @@
 #version 440
 
 in highp vec2 uv;
-layout(location = 0) out highp vec4 fragColor;
+layout(location = 0) out highp vec4 dom_out;
+layout(location = 1) out highp vec4 den_out;
 
-layout(binding = 0) uniform sampler2D den;
+layout(binding = 0) uniform sampler2D dom; // (v.x, v.y, pressure, density)
+layout(binding = 1) uniform sampler2D den; // (obstacles, source, vorticity, _)
 
 layout(location = 0) uniform int idx;
 layout(location = 1) uniform vec2 size;
@@ -18,32 +20,30 @@ void main() {
 //    float phy = mod(atan(coord.y,coord.x), 2.*3.14159265359);
 
     switch (idx) {
-    case 0:
-//        fragColor = vec4(0,0,1,texture(den,uv).x*7);
-//        if (UV.x != 0 && UV.y != 0 && UV.x != size.x-1 && UV.y != size.y-1)
-//            fragColor = vec4(0,0,1,0);
-//        else
-            fragColor = vec4(0,0,2,0);
-        break;
-    case 1:
-        fragColor = texelFetch(den, UV, 0);
-        fragColor.yz *= 0.005;
+    case 0: default:
+        dom_out = vec4(0,0,2,0);
+
+        vec4 de = texelFetch(den, UV, 0);
+        den_out.x = de.x; // obstacles
+        den_out.y = (de.y - de.z) * 0.005; // source
+        den_out.z = 0; // vorticity
         break;
     case 2: {
         vec2 st = uv;
         st.x *= ratio;
         st -= point * vec2(ratio,1);
-        fragColor = texelFetch(den, UV, 0);
-        fragColor.z += clamp(1 - 3 / rad*sqrt(dot(st, st)), 0, 1);
-        fragColor.w += density * clamp(1 - 1 / rad * sqrt(dot(st, st)), 0, 1);
+        dom_out = texelFetch(dom, UV, 0);
+        dom_out.z += clamp(1 - 3 / rad*sqrt(dot(st, st)), 0, 1);
+        dom_out.w += density * clamp(1 - 1 / rad * sqrt(dot(st, st)), 0, 1);
+
+        den_out = texelFetch(den, UV, 0);
         break;
     }
-    case 3: {
-        fragColor = texelFetch(den, UV, 0);
-        if (UV.y == 1 && UV.x > size.x/2 && UV.x < size.x-1)
-            fragColor.zw = vec2(2,1);
-        if (UV.y == size.y-2 && UV.x > 0 && UV.x < size.x/2)
-            fragColor.zw = vec2(2,-2);
+    case 333: {
+        dom_out = texelFetch(dom, UV, 0);
+
+        den_out = texelFetch(den, UV, 0);
+        break;
     }
     }
 }

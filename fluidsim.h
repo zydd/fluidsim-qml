@@ -27,7 +27,6 @@ private:
     QOpenGLShaderProgram *m_progInit;
     QOpenGLBuffer *m_vbo;
     QOpenGLFramebufferObject *m_fieldFbo[2] = {nullptr, nullptr};
-    QOpenGLFramebufferObject *m_domainFbo = nullptr;
     QOpenGLVertexArrayObject *m_vao;
     QImage m_init_tex;
     int m_cfbo = 0;
