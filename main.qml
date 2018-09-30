@@ -20,7 +20,7 @@ Window {
         vconf: vconf.value
         dt: 0.001+0.999*Math.pow(dt.value,2)
         factor: Math.round(1+99*Math.pow(factor.value,2))
-        simw: 256*1366/768
+        simw: simh*1366/768
         simh: 256
         running: true
         focus: true
@@ -91,17 +91,17 @@ Window {
 
             Column {
                 RowLayout {
-                    Slider { id: g; from: -1; to: 1; stepSize: 0.001; value: 0.0250 } // 0.07
+                    Slider { id: g; from: -1; to: 1; stepSize: 0.001; value: 0.07 } // 0.07
                     Label { text: 'g: ' + sim.g.toFixed(4) }
                 }
 
                 RowLayout {
-                    Slider { id: k; from: 0; to: 50; stepSize: 0.01; value: 3.44 } // 2
+                    Slider { id: k; from: 0; to: 50; stepSize: 0.01; value: 3.6 } // 2
                     Label { text: 'k: ' + sim.k.toFixed(4) }
                 }
 
                 RowLayout {
-                    Slider { id: v; from: 0; to: 10; stepSize: 0.001; value: 0.25 } // 0.05
+                    Slider { id: v; from: 0; to: 10; stepSize: 0.001; value: 0.5 } // 0.05
                     Label { text: 'v: ' + v.value.toFixed(4) }
                 }
 
@@ -111,7 +111,7 @@ Window {
                 }
 
                 RowLayout {
-                    Slider { id: vconf; from: 0; to: 5; stepSize: 0.001; value: 0.688 }
+                    Slider { id: vconf; from: 0; to: 1; stepSize: 0.001; value: 0.125 }
                     Label { text: 'vconf: ' + sim.vconf.toFixed(4) }
                 }
 
@@ -127,6 +127,7 @@ Window {
                     RadioButton { onPressed: sim.display = 3 }
                     RadioButton { onPressed: sim.display = 4 }
                     RadioButton { onPressed: sim.display = 5 }
+                    RadioButton { onPressed: sim.display = 6 }
                 }
                 RowLayout {
                     Slider { id: brush; from: 0; to: 0.1; stepSize: 0.001; value: 0.05 }

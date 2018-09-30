@@ -50,7 +50,7 @@ void main() {
         float div_u = (fr.x - fl.x)/2 + (ft.y - fb.y) / 2;
 
         // lap ú = (d2/dx2 u_x + d2/dy2 u_x, d2/dx2 u_y + d2/dy2 u_y)
-        vec2 lap_u = (fr.xy - 2 * fc.xy + fl.xy) / 4;
+        vec2 lap_u = (fr.xy + fl.xy + ft.xy + fb.xy - 4 * fc.xy) / 8;
 
         // dp/dt + div pú = 0
         // dp/dt = -ú . grad p - p div ú
@@ -73,17 +73,17 @@ void main() {
         const float vB = texelFetch(den, UV - ivec2(0, 1), 0).z;
 
         // n = grad(vorticity)
-        vec2 n = vec2(abs(vT) - abs(vB), abs(vR) - abs(vL));
-        // Safe normalize
-        const float EPSILON = 2.4414e-4;
-        float isqrt = 1/sqrt(max(EPSILON, dot(n, n)));
+        vec2 n = vec2(vT - vB, vR - vL);
+
         // omega = n / |n|
-        vec2 omega = n * isqrt;
+        vec2 omega = n / max(2.4414e-4, length(n));
+
         // f = e(omega x n)*dx
         vec2 force = vconf * (vC * vec2(omega.y, -omega.x));
+
         fc.xy += force * dt;
 
-        ic.z = (ft.y - fb.y - fl.x + fr.x) / 2;
+        ic.z = ft.x - fb.x + fr.y - fl.y;
 
         // boundary conditions
         if (texelFetch(den, UV + ivec2( 1, 0), 0).x < 0.1

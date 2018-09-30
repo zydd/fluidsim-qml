@@ -39,11 +39,5 @@ void main() {
         den_out = texelFetch(den, UV, 0);
         break;
     }
-    case 333: {
-        dom_out = texelFetch(dom, UV, 0);
-
-        den_out = texelFetch(den, UV, 0);
-        break;
-    }
     }
 }
