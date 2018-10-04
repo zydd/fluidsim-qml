@@ -6,7 +6,7 @@ import zydd.fluid 1.0
 
 Window {
     id: root
-    width: 640*1366/768
+    width: 640/2
     height: 640
     visible: true
 
@@ -20,8 +20,8 @@ Window {
         vconf: vconf.value
         dt: 0.001+0.999*Math.pow(dt.value,2)
         factor: Math.round(1+99*Math.pow(factor.value,2))
-        simw: simh*1366/768
-        simh: 256
+        simw: 64
+        simh: 128
         running: true
         focus: true
         display: 0
@@ -59,7 +59,7 @@ Window {
                 if (stopsim.running)
                     stopsim.restart()
                 sim.den_ellipse(Qt.point(ma.mouseX,ma.mouseY),brush.value,
-                                sim.button === Qt.RightButton ? 0.5 : -0.5)
+                                sim.button === Qt.RightButton ? density.value : -density.value)
             }
         }
 
@@ -85,23 +85,24 @@ Window {
         height: cfglayout.height
         id: config
         visible: false
+        opacity: 0.5
 
         Row {
             id: cfglayout
 
             Column {
                 RowLayout {
-                    Slider { id: g; from: -1; to: 1; stepSize: 0.001; value: 0.07 } // 0.07
+                    Slider { id: g; from: -0.1; to: 0.1; stepSize: 0.001; value: 0.044 } // 0.07
                     Label { text: 'g: ' + sim.g.toFixed(4) }
                 }
 
                 RowLayout {
-                    Slider { id: k; from: 0; to: 50; stepSize: 0.01; value: 3.6 } // 2
+                    Slider { id: k; from: 0; to: 50; stepSize: 0.01; value: 4.4 } // 2
                     Label { text: 'k: ' + sim.k.toFixed(4) }
                 }
 
                 RowLayout {
-                    Slider { id: v; from: 0; to: 10; stepSize: 0.001; value: 0.5 } // 0.05
+                    Slider { id: v; from: 0; to: 10; stepSize: 0.001; value: 3.1 } // 0.05
                     Label { text: 'v: ' + v.value.toFixed(4) }
                 }
 
@@ -111,12 +112,12 @@ Window {
                 }
 
                 RowLayout {
-                    Slider { id: vconf; from: 0; to: 1; stepSize: 0.001; value: 0.125 }
+                    Slider { id: vconf; from: 0; to: 1; stepSize: 0.001; value: 0.25 }
                     Label { text: 'vconf: ' + sim.vconf.toFixed(4) }
                 }
 
                 RowLayout {
-                    Slider { id: factor; from: 0; to: 1; value: Math.sqrt(70/100) }
+                    Slider { id: factor; from: 0; to: 1; value: Math.sqrt(10/100) }
                     Label { text: 'factor: ' + sim.factor }
                 }
 
@@ -132,6 +133,10 @@ Window {
                 RowLayout {
                     Slider { id: brush; from: 0; to: 0.1; stepSize: 0.001; value: 0.05 }
                     Label { text: 'brush: ' + brush.value.toFixed(4) }
+                }
+                RowLayout {
+                    Slider { id: density; from: 0; to: 1; stepSize: 0.001; value: 0.05 }
+                    Label { text: 'brush: ' + density.value.toFixed(4) }
                 }
 
                 RowLayout {
@@ -161,14 +166,16 @@ Window {
             ctx.fillStyle = '#ff0000';
             ctx.fillRect(0, 0, width, height);
 
-            ctx.fillStyle ='#ff0040';
-            ctx.fillRect(width/3, 4*height/10, width/3, height/10);
+            ctx.fillStyle ='#ff0090';
+//            ctx.fillRect(width/3, 4*height/10, width/3, height/10);
 
-            ctx.fillStyle ='#ff4000';
-            ctx.fillRect(width/3, 5*height/10, width/3, height/10);
+//            ctx.fillStyle ='#ff4000';
+//            ctx.fillRect(width/3, 5*height/10, width/3, height/10);
 
 //            for (var i = 0; i < 5; ++i)
-//                ctx.ellipse(width/3+i*width/15, 7*height/10, 1.5*height/10, 1.5*height/10).fill();
+//                ctx.ellipse(width/3+i*width/15, 7*height/10, 0.1*height, 0.1*height).fill();
+
+            ctx.ellipse(width/2-0.1*height/2, 7*height/10, 0.1*height, 0.1*height).fill();
 
             source.grabToImage(function(img) {
                 sim.setInitTex(img);
